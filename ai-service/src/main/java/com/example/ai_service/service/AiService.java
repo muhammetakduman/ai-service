@@ -1,6 +1,8 @@
 package com.example.ai_service.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import com.example.ai_service.model.EvaluateRecipeRequest;
 import com.example.ai_service.model.GPTResponse;
@@ -16,9 +18,21 @@ import java.net.URL;
 
 @Service
 @RequiredArgsConstructor
-public class AiService {
 
-    private Object or;
+public class AiService {
+    private final Dotenv dotenv = Dotenv.load();
+
+    private final String apiKey = dotenv.get("OPENROUTER_API_KEY");
+    private final String apiUrl = dotenv.get("OPENROUTER_API_URL");
+    private final String model  = dotenv.get("OPENROUTER_MODEL");
+/*
+    private String apiKey = "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";
+    private String apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+    private String model = "openai/gpt-3.5-turbo";
+
+ */
+
+/*
     @Value("${openrouter.api.key}")
     private String apiKey;
 
@@ -28,6 +42,8 @@ public class AiService {
     @Value("${openrouter.model}")
     private String model;
 
+ */
+
     public GPTResponse evaluateRecipe(EvaluateRecipeRequest request) throws IOException {
         String prompt = buildPrompt(request);
         String gptJson = callOpenRouter(prompt);
@@ -35,24 +51,49 @@ public class AiService {
         return objectMapper.readValue(gptJson, GPTResponse.class);
     }
 
+
+    /// promp düzeltintli
+    ///
+
     private String buildPrompt(EvaluateRecipeRequest request) {
         return """
-                Aşağıdaki başlık ve malzemelerle yemek yapılabilir mi?
-                Başlık: %s
-                Malzemeler: %s
+        Aşağıdaki başlık ve malzemelerle yemek yapılabilir mi?
+        
+        ● Eğer başlık saçma veya tanınmayan bir yemekse (örneğin: "1234", "xzy", "asdf"), sadece şu cevabı dön:
+        {
+          "exists": false,
+          "missingIngredients": [],
+          "aiComment": "Bu başlık bilinen bir yemek değil.",
+          "suggestedRecipe": null
+        }
 
-                Lütfen sadece şu JSON formatında cevap ver:
-                {
-                  "exists": boolean,
-                  "missingIngredients": [string],
-                  "aiComment": string,
-                  "suggestedRecipe": {
-                    "title": string,
-                    "steps": [string]
-                  }
-                }
-                """.formatted(request.getTitle(), String.join(", ", request.getIngredients()));
+        ● Eğer başlık tanıdık bir yemekse ama malzemeler eksikse:
+        - Eksik malzemeleri "missingIngredients" içinde belirt.
+        - Kısa bir açıklama "aiComment" içine yaz.
+        - Uygun şekilde bir "suggestedRecipe" döndür (basit adımlarla).
+        
+        ● Eğer malzemeler yeterliyse:
+        - "exists": true,
+        - "missingIngredients": boş liste olmalı.
+        - "aiComment" ve "suggestedRecipe" dolu olmalı.
+
+        Lütfen sadece aşağıdaki JSON formatında ve geçerli içeriklerle dön:
+        {
+          "exists": boolean,
+          "missingIngredients": [string],
+          "aiComment": string,
+          "suggestedRecipe": {
+            "title": string,
+            "steps": [string]
+          }
+        }
+
+        Başlık: %s
+        Malzemeler: %s
+        """.formatted(request.getTitle(), String.join(", ", request.getIngredients()));
     }
+
+
 
     private String callOpenRouter(String prompt) throws IOException {
         URL url = new URL(apiUrl);

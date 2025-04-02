@@ -15,6 +15,7 @@ public class GPTResponse {
 
     @Data
     public static class SuggestedRecipe{
+        //2.dönen değelerder list<str> revizesi yapıldı.
         private String title;
         private List<String> steps;
     }
