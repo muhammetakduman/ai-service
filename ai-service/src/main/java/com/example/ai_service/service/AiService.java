@@ -2,11 +2,9 @@ package com.example.ai_service.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import com.example.ai_service.model.EvaluateRecipeRequest;
 import com.example.ai_service.model.GPTResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -20,29 +18,15 @@ import java.net.URL;
 @RequiredArgsConstructor
 
 public class AiService {
+
+    ///service information
     private final Dotenv dotenv = Dotenv.load();
 
     private final String apiKey = dotenv.get("OPENROUTER_API_KEY");
     private final String apiUrl = dotenv.get("OPENROUTER_API_URL");
     private final String model  = dotenv.get("OPENROUTER_MODEL");
-/*
-    private String apiKey = "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";
-    private String apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-    private String model = "openai/gpt-3.5-turbo";
 
- */
 
-/*
-    @Value("${openrouter.api.key}")
-    private String apiKey;
-
-    @Value("${openrouter.api.url}")
-    private String apiUrl;
-
-    @Value("${openrouter.model}")
-    private String model;
-
- */
 
     public GPTResponse evaluateRecipe(EvaluateRecipeRequest request) throws IOException {
         String prompt = buildPrompt(request);
@@ -52,8 +36,8 @@ public class AiService {
     }
 
 
-    /// promp düzeltintli
-    ///
+    /// promp düzeltildi
+
 
     private String buildPrompt(EvaluateRecipeRequest request) {
         return """
@@ -103,7 +87,7 @@ public class AiService {
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + apiKey);
-        connection.setRequestProperty("HTTP-Referer", "http://localhost"); // Gerekli olabilir
+        connection.setRequestProperty("HTTP-Referer", "http://localhost");
 
         String body = """
                 {
@@ -129,6 +113,7 @@ public class AiService {
         }
     }
 
+    ///response edilen yanıtın temizliği (anlamlandırmak için)
     private String extractJsonFromOpenRouterResponse(String response) {
         int index = response.indexOf("content\":\"");
         if (index == -1) return "{}";
